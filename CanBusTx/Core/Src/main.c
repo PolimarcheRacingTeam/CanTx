@@ -53,7 +53,7 @@ CAN_RxHeaderTypeDef RxHeader;
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 /* USER CODE BEGIN PFP */
-void CAN1_Tx(uint8_t TxMessage[6]);
+void CAN1_Tx(uint8_t stdid, uint16_t TxMessage[8]);
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
@@ -105,7 +105,7 @@ int main(void)
   sFilterConfig.FilterBank = 0;
 
   HAL_CAN_ConfigFilter(&hcan, &sFilterConfig);
-
+  uint8_t s=1;
 
   /* USER CODE END 2 */
 
@@ -116,20 +116,24 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-	  uint8_t mess[6] = {
-			  rand()%6 + 1,0,0,rand()%6 + 1,0,0
-	  };
+	  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
+	  uint16_t rawdata[4];
+	  uint16_t rawdata2[4];
 
-		  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
-		  HAL_Delay(2000);
-		  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
-		  HAL_Delay(2000);
-		  CAN1_Tx(mess);
-		  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_SET);
-		  HAL_Delay(200);
-		  HAL_GPIO_WritePin(LED_GPIO_Port, LED_Pin, GPIO_PIN_RESET);
-		  HAL_Delay(200);
+	  rawdata[0] += s*100;
+	  if (rawdata[0]<0 || rawdata[0]>8000) s*=-1;
+	  rawdata[1] = rand()%6+1;				//marcia
+	  rawdata[2] = rand()%3+1;				//mappa
+	  rawdata[3] = rand()%2;				//drs
+	  rawdata2[0] = rand()%60+50;			//oil temp
+	  rawdata2[1] = rand()%20+30;			//air temp
+	  rawdata2[2] = rand()%60+50;			//h2o temp
+	  rawdata2[3] = rand()%4+10;			//battery voltage
 
+
+	  CAN1_Tx(17,rawdata);
+	  CAN1_Tx(18,rawdata2);
+	  HAL_Delay(100);
 
 
 
@@ -178,7 +182,7 @@ void SystemClock_Config(void)
 
 /* USER CODE BEGIN 4 */
 
-void CAN1_Tx(uint8_t message[6]){
+void CAN1_Tx(uint8_t stdid, uint16_t message[8]){
 
 	CAN_TxHeaderTypeDef TxHeader;
 
@@ -189,8 +193,8 @@ void CAN1_Tx(uint8_t message[6]){
 		 'H','E','L','L','O','!'
 	};
 	*/
-	TxHeader.DLC = 6; //How many bytes do you want to send, tra 0 e 8; 0 byte oppure 8 byte, 0 è inutile
-	TxHeader.StdId = 17; // Standard Identifier, va da 0 a 0x7FF
+	TxHeader.DLC = 8; //How many bytes do you want to send, tra 0 e 8; 0 byte oppure 8 byte, 0 è inutile
+	TxHeader.StdId = stdid; // Standard Identifier, va da 0 a 0x7FF
 	TxHeader.IDE = CAN_ID_STD; //Questo è sempre così, specifica che si stanno usando gli indirizzi standard
 	TxHeader.RTR = CAN_RTR_DATA; //DATA O REMOTE, non so cosa sia remote
 
